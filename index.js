@@ -28,11 +28,17 @@ const typeDefs = gql`
 // Launch: {
 //   name: (launch) => launch.mission_name
 // }
+
+// Assuming name is there
 const resolvers = {
   Query: {
     launches(parent, {input}, context, info) {
       const { name } = input || {};
       console.log({name})
+
+      if (name) {
+        return launches.filter(launch => launch.name.toLowerCase().includes(name))
+      }
 
       return launches;
     }
