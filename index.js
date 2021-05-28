@@ -27,14 +27,18 @@ const typeDefs = gql`
         "YYYY-MM-DD date format (no time)"
         end_date: String
         norad_ids: [Int]
+        flight_number: Int
+        launch_success: Boolean
     }
     
     type Launch {
+        flight_number: Int
         mission_name: String
         "Unix epoch time"
         launch_date_unix: Int
         launch_date_friendly: String # # This is just to be easier to know the date probably shouldn't be left on the graph
         rocket: Rocket
+        launch_success: Boolean
     }
     
     type Rocket {
@@ -50,7 +54,7 @@ const resolvers = {
   Query: {
     launches(_, { input }) {
       // I'm assuming if date(s) are provided they are in the proper format 🤷‍♂️
-      const { mission_name, start_date, end_date, norad_ids } = input || {}
+      const { mission_name, start_date, end_date, norad_ids, flight_number, launch_success } = input || {}
       console.log('Your input', input)
 
       let filteredLaunches = launches; // Not the safest but not altering our source variable
@@ -80,6 +84,14 @@ const resolvers = {
         filteredLaunches = filteredLaunches.filter(launch => {
           return getNoradIdsFromLaunch(launch).length === 0
         })
+      }
+
+      if (flight_number) {
+        filteredLaunches = filteredLaunches.filter(launch => launch.flight_number === flight_number)
+      }
+
+      if (launch_success !== void 0) {
+        filteredLaunches = filteredLaunches.filter(launch => launch.launch_success === launch_success)
       }
 
       return filteredLaunches
