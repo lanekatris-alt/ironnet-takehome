@@ -11,6 +11,7 @@ const launches = rawLaunches.map(launch => ({
 // I decided to not support time, just date, I didn't think launches happened a ton of times on the same day
 // I'm not a fan of snake case but decided to stick with the data format
 // I didn't see a reason to add all the values from data and focused on filtering and type shapes
+// Normally I would split up this file if it got any bigger but no reason for this project
 const typeDefs = gql`
     # Normally I would make the input required always but it does make the endpoint easy to use by not requiring it to be passed in and expecting all to be returned (hence the comment in schema)
     type Query {
@@ -48,7 +49,7 @@ const typeDefs = gql`
 const resolvers = {
   Query: {
     launches(_, { input }) {
-      // I'm assuming if date(s) are provided in the proper format 🤷‍♂️
+      // I'm assuming if date(s) are provided they are in the proper format 🤷‍♂️
       const { mission_name, start_date, end_date, norad_ids } = input || {}
       console.log('Your input', input)
 
