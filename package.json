@@ -1,0 +1,15 @@
+{
+  "name": "spacex-graphql",
+  "version": "1.0.0",
+  "description": "Programming Challenge to show off how to model complex data using GraphQL",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "apollo-server": "^2.19.1",
+    "graphql": "^15.4.0"
+  }
+}
