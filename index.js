@@ -1,5 +1,5 @@
-const unixToDate = require('./unix-to-date');
 const copy = require('./copy');
+const getNoradIdsFromLaunch = require('./norad-ids-from-launch');
 const { ApolloServer, gql } = require('apollo-server');
 const moment = require('moment');
 
@@ -8,7 +8,10 @@ const launches = rawLaunches.map(launch => ({
   name: launch.mission_name,
   launchDateUnix: launch.launch_date_unix,
   launchDateIso: moment.unix(launch.launch_date_unix).toISOString(),
-  launchDateFriendly: moment.unix(launch.launch_date_unix).toLocaleString()
+  launchDateFriendly: moment.unix(launch.launch_date_unix).toLocaleString(),
+
+  // rocket: launch.rocket
+  ...launch
 }))
 
 // This is the definition of the GraphQL schema
@@ -30,6 +33,7 @@ const typeDefs = gql`
         startDate: String
         "YYYY-MM-DD date format (no time)"
         endDate: String
+        noradIds: [Int]
     }
     
     type Launch {
@@ -39,6 +43,16 @@ const typeDefs = gql`
         "ISO format"
         launchDateIso: String # This is just to be easier to know the date; probably shouldn't be left on the graph
         launchDateFriendly: String
+        
+        rocket: Rocket
+    }
+    
+    type Rocket {
+        payloads: [RocketPayload]
+    }
+
+    type RocketPayload {
+        norad_id: [Int]
     }
 `;
 
@@ -46,7 +60,8 @@ const resolvers = {
   Query: {
     launches(_, { input }) {
       // I'm assuming if date(s) are provided in the proper format 🤷‍♂️
-      const { name, startDate, endDate } = input || {};
+      const { name, startDate, endDate, noradIds } = input || {};
+      console.log(input)
 
       // TODO: Does this actually edit it for everybody?
       let filteredLaunches = copy(launches); // Don't alter our variable that requests share
@@ -60,11 +75,21 @@ const resolvers = {
         const _endDate = endDate ? moment(endDate) : _startDate;
 
         filteredLaunches = filteredLaunches.filter(launch => {
-          // const launchDate = unixToDate(launch.launchDateUnix);
           const launchDate = moment.unix(launch.launchDateUnix)
-          // return launchDate <= _startDate && launchDate >= _endDate;
-          const r = launchDate.isBetween(_startDate, _endDate, 'days', '[]')
-            return r;
+          return launchDate.isBetween(_startDate, _endDate, 'days', '[]')
+        })
+      }
+
+      if (noradIds && noradIds.length > 0) {
+        filteredLaunches = filteredLaunches.filter(launch => {
+          const foundNoradIds = getNoradIdsFromLaunch(launch)
+          return noradIds.some(id => foundNoradIds.includes(id));
+        })
+      }
+
+      if (noradIds && noradIds.length === 0) {
+        filteredLaunches = filteredLaunches.filter(launch => {
+          return getNoradIdsFromLaunch(launch).length === 0
         })
       }
 
@@ -77,7 +102,6 @@ const resolvers = {
 
 const server = new ApolloServer({ typeDefs, resolvers });
 
-// The `listen` method launches a web server.
 server.listen().then(({ url }) => {
   console.log(`🚀  Server ready at ${url}`);
 })
