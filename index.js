@@ -1,46 +1,74 @@
-const { ApolloServer, gql } = require("apollo-server");
-const rawLaunches = require("./spacex_launches.json");
+const unixToDate = require('./unix-to-date');
+const copy = require('./copy');
+const { ApolloServer, gql } = require('apollo-server');
+const moment = require('moment');
 
+const rawLaunches = require('./spacex_launches.json');
 const launches = rawLaunches.map(launch => ({
-  name: launch.mission_name
+  name: launch.mission_name,
+  launchDateUnix: launch.launch_date_unix,
+  launchDateIso: moment.unix(launch.launch_date_unix).toISOString(),
+  launchDateFriendly: moment.unix(launch.launch_date_unix).toLocaleString()
 }))
 
 // This is the definition of the GraphQL schema
 // How you structure this schema to fit the spacex_launches_data below
 // along with how you write the code is the primary assessment
 // Make input required?
+// Any kind of date fields in teh graph its nice to say the format
+// I decided to not support time, just date, I didn't think launches happened a ton of times on the same day
 const typeDefs = gql`
-    
+    # Normally I would make the input required always but it does make the endpoint easy to use by not requiring it to be passed in and expecting all to be returned (hence the comment in schema)
     type Query {
+        "Returns all launches if no input provided"
         launches(input: MissionsInput): [Launch]
     }
     
     input MissionsInput {
         name: String
+        "YYYY-MM-DD date format (no time)"
+        startDate: String
+        "YYYY-MM-DD date format (no time)"
+        endDate: String
     }
     
     type Launch {
-        name: String!
+        name: String
+        "Unix epoch time"
+        launchDateUnix: Int
+        "ISO format"
+        launchDateIso: String # This is just to be easier to know the date; probably shouldn't be left on the graph
+        launchDateFriendly: String
     }
 `;
 
-// Resolvers define the technique for fetching the types defined in the schema.
-// Launch: {
-//   name: (launch) => launch.mission_name
-// }
-
-// Assuming name is there
 const resolvers = {
   Query: {
-    launches(parent, {input}, context, info) {
-      const { name } = input || {};
-      console.log({name})
+    launches(_, { input }) {
+      // I'm assuming if date(s) are provided in the proper format 🤷‍♂️
+      const { name, startDate, endDate } = input || {};
+
+      // TODO: Does this actually edit it for everybody?
+      let filteredLaunches = copy(launches); // Don't alter our variable that requests share
 
       if (name) {
-        return launches.filter(launch => launch.name.toLowerCase().includes(name))
+        filteredLaunches = filteredLaunches.filter(launch => launch.name.toLowerCase().includes(name))
       }
 
-      return launches;
+      if (startDate) {
+        const _startDate = moment(startDate);
+        const _endDate = endDate ? moment(endDate) : _startDate;
+
+        filteredLaunches = filteredLaunches.filter(launch => {
+          // const launchDate = unixToDate(launch.launchDateUnix);
+          const launchDate = moment.unix(launch.launchDateUnix)
+          // return launchDate <= _startDate && launchDate >= _endDate;
+          const r = launchDate.isBetween(_startDate, _endDate, 'days', '[]')
+            return r;
+        })
+      }
+
+      return filteredLaunches;
     }
   }
 
