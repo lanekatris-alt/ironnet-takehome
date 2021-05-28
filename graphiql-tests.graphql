@@ -1,0 +1,78 @@
+fragment LAUNCH_FRAGMENT on Launch {
+    flight_number
+    mission_name
+    launch_date_unix
+    launch_date_friendly
+    launch_success
+    # rocket {
+    # 	payloads {
+    # 		norad_id
+    # 	}
+    # }
+}
+
+query {
+    one:launches(input:{
+        mission_name: "c"
+    }) {
+        ...LAUNCH_FRAGMENT
+    }
+    onedotone:launches(input:{
+        mission_name: "star"
+    }) {
+        ...LAUNCH_FRAGMENT
+    }
+    two: launches(input:{
+        mission_name: "star",
+        start_date: "2020-03-18"
+    }) {
+        ...LAUNCH_FRAGMENT
+    }
+    three: launches(input:{
+        start_date: "2020-03-06"
+    }) {
+        ...LAUNCH_FRAGMENT
+    }
+    four: launches(input:{
+        start_date: "2020-03-06",
+        end_date: "2020-03-18"
+    }) {
+        ...LAUNCH_FRAGMENT
+    }
+    five: launches(input:{
+        norad_ids: []
+    }) {
+        ...LAUNCH_FRAGMENT
+    }
+    six: launches(input:{
+        norad_ids: [45341]
+    }) {
+        ...LAUNCH_FRAGMENT
+    }
+    seven: launches(input:{
+        norad_ids: [72000, 45341]
+    }) {
+        ...LAUNCH_FRAGMENT
+    }
+    eight: launches(input:{
+        mission_name: "star",
+        norad_ids: [45229, 45230, 45231]
+    }) {
+        ...LAUNCH_FRAGMENT
+    }
+    nine: launches(input:{
+        mission_name: "crs",
+        flight_number: 91
+    }) {
+        ...LAUNCH_FRAGMENT
+    }
+    # Expect no results for ten
+    ten: launches(input:{
+        launch_success: false
+    }) {
+        ...LAUNCH_FRAGMENT
+    }
+    all:launches {
+        ...LAUNCH_FRAGMENT
+    }
+}
